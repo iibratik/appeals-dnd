@@ -1,0 +1,28 @@
+.btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.primary-btn {
+    background-color: var(--primary-color);
+    font-size: 12px;
+    color: var(--text-secondary-color);
+    padding: 4px 10px;
+    border-radius: 14px;
+}
+.secondary-btn {
+    width: 32px;
+    cursor: pointer;
+    height: 32px;
+    border-radius: 12px;
+    background-color: var(--shadows-secondary-color);
+    position: relative;
+    &.disabled {
+        cursor: auto;
+        opacity: 0.3;
+    }
+}
+.drop-down-btn {
+    background-color: var(--secondary-color);
+}
