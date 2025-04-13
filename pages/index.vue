@@ -4,7 +4,7 @@
       <div class="list__header">
         <div class="header__title">
           <h2 class="title list__title">Games List</h2>
-          <button class="btn primary-btn">Found: {{ foundedItems }}</button>
+          <button class="btn primary-btn">Found: {{ appealStore.totalItems }}</button>
         </div>
         <control-btns />
       </div>
@@ -12,19 +12,32 @@
         <appeal-list />
       </div>
       <div class="list-footer">
-        <span class="footer-title">Showing 10 of 100</span>
+        <span class="footer-title">Showing {{ appealStore.showingRange }}</span>
         <div class="footer-pagination">
-          <button class="pagination-btn prev-pagination" @click="changePage(currentPage - 1)">
-            <img src="@/assets/icons/left-btn-icon.svg" alt="prev icon">
+          <button
+            class="pagination-btn prev-pagination"
+            @click="changePage(appealStore.page - 1)"
+            :disabled="appealStore.page <= 1"
+          >
+            <img src="@/assets/icons/left-btn-icon.svg" alt="prev icon" />
           </button>
           <div class="footer-pagination-items">
-            <div v-for="item in paginationPages" :key="item" :class="currentPage == item ? 'active' : null"
-              class="footer-pagination-item" @click="changePage(item)">
+            <div
+              v-for="item in paginationPages"
+              :key="item"
+              :class="appealStore.page === item ? 'active' : null"
+              class="footer-pagination-item"
+              @click="changePage(item)"
+            >
               {{ item === '...' ? '...' : item }}
             </div>
           </div>
-          <button class="pagination-btn next-pagination" @click="changePage(currentPage + 1)">
-            <img src="@/assets/icons/left-btn-icon.svg" alt="next icon">
+          <button
+            class="pagination-btn next-pagination"
+            @click="changePage(appealStore.page + 1)"
+            :disabled="appealStore.page >= appealStore.totalPages"
+          >
+            <img src="@/assets/icons/left-btn-icon.svg" alt="next icon" />
           </button>
         </div>
       </div>
@@ -33,55 +46,55 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed, onMounted } from 'vue'
+import { useAppealStore } from '@/stores/appeals'
 
+const appealStore = useAppealStore()
 
-const pageCount = 10;
-const currentPage = ref(1);
-const foundedItems: number = 4;
+onMounted(() => {
+  appealStore.fetchAppeals()
+})
 
 const paginationPages = computed(() => {
-  const pages: (number | string)[] = [];
+  const pageCount = appealStore.totalPages
+  const current = appealStore.page
+  const pages: (number | string)[] = []
 
   if (pageCount <= 7) {
-    // если страниц мало — просто все показать
     for (let i = 1; i <= pageCount; i++) {
-      pages.push(i);
+      pages.push(i)
     }
   } else {
-    pages.push(1);
+    pages.push(1)
 
-    if (currentPage.value > 4) {
-      pages.push('...');
+    if (current > 4) {
+      pages.push('...')
     }
 
-    const start = Math.max(2, currentPage.value);
-    const end = Math.min(currentPage.value + 2, pageCount - 1);
+    const start = Math.max(2, current)
+    const end = Math.min(current + 2, pageCount - 1)
 
     for (let i = start; i <= end; i++) {
-      pages.push(i);
+      pages.push(i)
     }
 
     if (end < pageCount - 1) {
-      pages.push('...');
+      pages.push('...')
     }
 
-    pages.push(pageCount);
+    pages.push(pageCount)
   }
 
-  return pages;
-});
+  return pages
+})
 
-// Функция для изменения текущей страницы
 function changePage(page: number | string) {
-  if (page === '...') {
-    return; // не делаем ничего, если это '...'
-  }
+  if (page === '...') return
 
-  if (typeof page === 'number') {
-    if (page >= 1 && page <= pageCount) {
-      currentPage.value = page;
-    }
+  const n = Number(page)
+  if (n >= 1 && n <= appealStore.totalPages) {
+    appealStore.page = n // Обновление состояния страницы в store
+    appealStore.fetchAppeals(n)
   }
 }
 </script>
