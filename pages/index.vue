@@ -54,20 +54,18 @@ import { useHistoryStore } from '@/stores/useHistoryStore'
 const appealStore = useAppealStore()
 const historyStore = useHistoryStore()
 
-// ===== Загрузка данных =====
+
 onMounted(async () => {
   await appealStore.fetchAppeals()
 
-  // Загружаем историю из localStorage
   historyStore.loadFromStorage()
 
-  // Если история есть — применяем её
+
   if (historyStore.currentItems.length > 0) {
     appealStore.updateItems(historyStore.currentItems)
   }
 })
 
-// ===== История действий =====
 function undoStep() {
   historyStore.undo()
   appealStore.updateItems(historyStore.currentItems)
@@ -81,7 +79,7 @@ function redoStep() {
 const canUndo = computed(() => historyStore.past.length > 1)
 const canRedo = computed(() => historyStore.future.length > 0)
 
-// ===== Пагинация =====
+
 const paginationPages = computed(() => {
   const pageCount = appealStore.totalPages
   const current = appealStore.page
@@ -117,7 +115,7 @@ function changePage(page: number | string) {
   const pageNumber = Number(page)
   if (pageNumber >= 1 && pageNumber <= appealStore.totalPages) {
     appealStore.page = pageNumber
-    appealStore.fetchAppeals(pageNumber) // ⚠️ История здесь не сохраняется
+    appealStore.fetchAppeals(pageNumber)
   }
 }
 </script>

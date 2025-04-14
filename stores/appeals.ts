@@ -22,7 +22,7 @@ export const useAppealStore = defineStore('appeal', () => {
 
   const LOCAL_STORAGE_KEY = 'appeal-items'
 
-  // Загружаем из localStorage
+
   const loadFromStorage = () => {
     const stored = localStorage.getItem(LOCAL_STORAGE_KEY)
     if (stored) {
@@ -39,12 +39,11 @@ export const useAppealStore = defineStore('appeal', () => {
     return false
   }
 
-  // Сохраняем в localStorage
+
   const saveToStorage = () => {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(items.value))
   }
 
-  // Загрузка данных (сначала пробуем из localStorage)
   const fetchAppeals = async (_pageNum: number = page.value) => {
     const hasLocalData = loadFromStorage()
     if (hasLocalData) {
