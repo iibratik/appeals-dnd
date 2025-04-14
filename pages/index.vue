@@ -6,19 +6,23 @@
           <h2 class="title list__title">Games List</h2>
           <button class="btn primary-btn">Found: {{ appealStore.totalItems }}</button>
         </div>
-        <control-btns />
+        <control-btns
+          @next-step="redoStep"
+          @prev-step="undoStep"
+          :isNextStepActive="canRedo"
+          :isPrevStepActive="canUndo"
+        />
       </div>
+
       <div class="list__body">
         <appeal-list />
       </div>
+
       <div class="list-footer">
         <span class="footer-title">Showing {{ appealStore.showingRange }}</span>
         <div class="footer-pagination">
-          <button
-            class="pagination-btn prev-pagination"
-            @click="changePage(appealStore.page - 1)"
-            :disabled="appealStore.page <= 1"
-          >
+          <button class="pagination-btn prev-pagination" @click="changePage(appealStore.page - 1)"
+            :disabled="appealStore.page <= 1">
             <img src="@/assets/icons/left-btn-icon.svg" alt="prev icon" />
           </button>
           <div class="footer-pagination-items">
@@ -32,11 +36,8 @@
               {{ item === '...' ? '...' : item }}
             </div>
           </div>
-          <button
-            class="pagination-btn next-pagination"
-            @click="changePage(appealStore.page + 1)"
-            :disabled="appealStore.page >= appealStore.totalPages"
-          >
+          <button class="pagination-btn next-pagination" @click="changePage(appealStore.page + 1)"
+            :disabled="appealStore.page >= appealStore.totalPages">
             <img src="@/assets/icons/left-btn-icon.svg" alt="next icon" />
           </button>
         </div>
@@ -48,13 +49,39 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { useAppealStore } from '@/stores/appeals'
+import { useHistoryStore } from '@/stores/useHistoryStore'
 
 const appealStore = useAppealStore()
+const historyStore = useHistoryStore()
 
-onMounted(() => {
-  appealStore.fetchAppeals()
+// ===== Загрузка данных =====
+onMounted(async () => {
+  await appealStore.fetchAppeals()
+
+  // Загружаем историю из localStorage
+  historyStore.loadFromStorage()
+
+  // Если история есть — применяем её
+  if (historyStore.currentItems.length > 0) {
+    appealStore.updateItems(historyStore.currentItems)
+  }
 })
 
+// ===== История действий =====
+function undoStep() {
+  historyStore.undo()
+  appealStore.updateItems(historyStore.currentItems)
+}
+
+function redoStep() {
+  historyStore.redo()
+  appealStore.updateItems(historyStore.currentItems)
+}
+
+const canUndo = computed(() => historyStore.past.length > 1)
+const canRedo = computed(() => historyStore.future.length > 0)
+
+// ===== Пагинация =====
 const paginationPages = computed(() => {
   const pageCount = appealStore.totalPages
   const current = appealStore.page
@@ -67,9 +94,7 @@ const paginationPages = computed(() => {
   } else {
     pages.push(1)
 
-    if (current > 4) {
-      pages.push('...')
-    }
+    if (current > 4) pages.push('...')
 
     const start = Math.max(2, current)
     const end = Math.min(current + 2, pageCount - 1)
@@ -78,9 +103,7 @@ const paginationPages = computed(() => {
       pages.push(i)
     }
 
-    if (end < pageCount - 1) {
-      pages.push('...')
-    }
+    if (end < pageCount - 1) pages.push('...')
 
     pages.push(pageCount)
   }
@@ -91,10 +114,10 @@ const paginationPages = computed(() => {
 function changePage(page: number | string) {
   if (page === '...') return
 
-  const n = Number(page)
-  if (n >= 1 && n <= appealStore.totalPages) {
-    appealStore.page = n // Обновление состояния страницы в store
-    appealStore.fetchAppeals(n)
+  const pageNumber = Number(page)
+  if (pageNumber >= 1 && pageNumber <= appealStore.totalPages) {
+    appealStore.page = pageNumber
+    appealStore.fetchAppeals(pageNumber) // ⚠️ История здесь не сохраняется
   }
 }
 </script>

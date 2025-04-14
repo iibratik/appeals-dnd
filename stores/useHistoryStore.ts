@@ -1,4 +1,3 @@
-// stores/history.ts
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
@@ -17,7 +16,7 @@ export const useHistoryStore = defineStore('history', () => {
   const MAX_HISTORY = 20
 
   function setItems(newItems: Game[]) {
-    const cloned = JSON.parse(JSON.stringify(newItems)) // безопасная копия
+    const cloned = JSON.parse(JSON.stringify(newItems))
 
     if (JSON.stringify(cloned) !== JSON.stringify(currentItems.value)) {
       if (past.value.length >= MAX_HISTORY) past.value.shift()
@@ -27,16 +26,17 @@ export const useHistoryStore = defineStore('history', () => {
       saveToStorage()
     }
   }
+
   function undo() {
     if (past.value.length === 0) return
-    future.value.unshift(structuredClone(currentItems.value))
+    future.value.unshift(JSON.parse(JSON.stringify(currentItems.value)))
     currentItems.value = past.value.pop()!
     saveToStorage()
   }
 
   function redo() {
     if (future.value.length === 0) return
-    past.value.push(structuredClone(currentItems.value))
+    past.value.push(JSON.parse(JSON.stringify(currentItems.value)))
     currentItems.value = future.value.shift()!
     saveToStorage()
   }
@@ -52,10 +52,14 @@ export const useHistoryStore = defineStore('history', () => {
   function loadFromStorage() {
     const data = localStorage.getItem('appeal-history')
     if (!data) return
-    const parsed = JSON.parse(data)
-    past.value = parsed.past || []
-    currentItems.value = parsed.current || []
-    future.value = parsed.future || []
+    try {
+      const parsed = JSON.parse(data)
+      past.value = parsed.past || []
+      currentItems.value = parsed.current || []
+      future.value = parsed.future || []
+    } catch (e) {
+      console.error('Failed to parse appeal-history:', e)
+    }
   }
 
   return {

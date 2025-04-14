@@ -65,9 +65,30 @@ function mapGame(item: Item) {
   }
 }
 
-// Обновление дочерних элементов в сторе
-function handleUpdateChildOrder({ groupId, items }: { groupId: number; items: { id: number; name: string; order: number }[] }) {
-  appealStore.updateChildItems(groupId, items)
+function handleUpdateChildOrder({
+  groupId,
+  items,
+}: {
+  groupId: number
+  items: { id: number; name: string; order: number }[]
+}) {
+  // Клонируем текущие данные
+  const updated = appealStore.items.map((group) => {
+    if (group.id === groupId) {
+      return {
+        ...group,
+        children: items.map((item) => ({
+          id: item.id,
+          title: item.name,
+          order: item.order,
+        })),
+      }
+    }
+    return group
+  })
+
+  appealStore.updateItems(updated)
+  historyStore.setItems(updated)
 }
 
 // Управление dropdown и меню
