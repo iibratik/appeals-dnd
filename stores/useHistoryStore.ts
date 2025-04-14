@@ -1,74 +1,70 @@
-// stores/useHistoryStore.ts
+// stores/history.ts
 import { defineStore } from 'pinia'
+import { ref } from 'vue'
 
-export const useHistoryStore = defineStore('history', {
-  state: () => ({
-    history: [] as number[], // История страниц
-    currentIndex: -1, // Текущий индекс в истории
-  }),
+interface Game {
+  id: number
+  name: string
+  order: number
+  items: { id: number; name: string; order: number }[]
+}
 
-  actions: {
-    // Инициализация состояния из localStorage при старте
-    initialize() {
-      const savedHistory = localStorage.getItem('history')
-      const savedIndex = localStorage.getItem('currentIndex')
+export const useHistoryStore = defineStore('history', () => {
+  const past = ref<Game[][]>([])
+  const future = ref<Game[][]>([])
+  const currentItems = ref<Game[]>([])
 
-      if (savedHistory && savedIndex) {
-        this.history = JSON.parse(savedHistory)
-        this.currentIndex = Number(savedIndex)
-      }
-    },
+  const MAX_HISTORY = 20
 
-    // Добавляем новый шаг в историю
-    addStep(page: number) {
-      // Обрезаем историю, если текущий индекс меньше, чем длина истории
-      if (this.currentIndex < this.history.length - 1) {
-        this.history = this.history.slice(0, this.currentIndex + 1)
-      }
+  function setItems(newItems: Game[]) {
+    const cloned = JSON.parse(JSON.stringify(newItems)) // безопасная копия
 
-      this.history.push(page)
-      this.currentIndex++
+    if (JSON.stringify(cloned) !== JSON.stringify(currentItems.value)) {
+      if (past.value.length >= MAX_HISTORY) past.value.shift()
+      past.value.push(JSON.parse(JSON.stringify(currentItems.value)))
+      currentItems.value = cloned
+      future.value = []
+      saveToStorage()
+    }
+  }
+  function undo() {
+    if (past.value.length === 0) return
+    future.value.unshift(structuredClone(currentItems.value))
+    currentItems.value = past.value.pop()!
+    saveToStorage()
+  }
 
-      // Сохраняем состояние в localStorage
-      this.saveState()
-    },
+  function redo() {
+    if (future.value.length === 0) return
+    past.value.push(structuredClone(currentItems.value))
+    currentItems.value = future.value.shift()!
+    saveToStorage()
+  }
 
-    // Отменить (переход на предыдущую страницу)
-    undo() {
-      if (this.currentIndex > 0) {
-        this.currentIndex--
-        this.saveState()
-        return this.history[this.currentIndex]
-      }
-      return null
-    },
+  function saveToStorage() {
+    localStorage.setItem('appeal-history', JSON.stringify({
+      past: past.value,
+      current: currentItems.value,
+      future: future.value,
+    }))
+  }
 
-    // Повторить (переход на следующую страницу)
-    redo() {
-      if (this.currentIndex < this.history.length - 1) {
-        this.currentIndex++
-        this.saveState()
-        return this.history[this.currentIndex]
-      }
-      return null
-    },
+  function loadFromStorage() {
+    const data = localStorage.getItem('appeal-history')
+    if (!data) return
+    const parsed = JSON.parse(data)
+    past.value = parsed.past || []
+    currentItems.value = parsed.current || []
+    future.value = parsed.future || []
+  }
 
-    // Получить текущую страницу из истории
-    getCurrentPage() {
-      return this.history[this.currentIndex] ?? null
-    },
-
-    // Сохранение состояния в localStorage
-    saveState() {
-      localStorage.setItem('history', JSON.stringify(this.history))
-      localStorage.setItem('currentIndex', this.currentIndex.toString())
-    },
-
-    // Очистить историю
-    resetHistory() {
-      this.history = []
-      this.currentIndex = -1
-      this.saveState()
-    },
-  },
+  return {
+    currentItems,
+    past,
+    future,
+    setItems,
+    undo,
+    redo,
+    loadFromStorage,
+  }
 })
