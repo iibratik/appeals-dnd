@@ -43,12 +43,9 @@
     <!-- DROPDOWN -->
     <Transition name="fade-slide">
       <ul v-if="isOpen" class="appeal-lists__dropdown">
-        <li v-for="(item, index) in localItems" :key="item.id" class="appeal-list__dropdown"
-            :draggable="true"
-            @dragstart="onChildDragStart(index, $event)"
-            @dragover="onChildDragOver($event)"
-            @drop="onChildDrop(index, $event)"
-            @dragend="onChildDragEnd">
+        <li v-for="(item, index) in localItems" :key="item.id" class="appeal-list__dropdown" :draggable="true"
+          @dragstart="onChildDragStart(index, $event)" @dragover="onChildDragOver" @drop="onChildDrop(index, $event)"
+          @dragend="onChildDragEnd">
           <div class="list__item">
             <span class="list__upper-title">№</span>
             <span class="list__title">{{ game.id }}.{{ item.id }}</span>
@@ -68,7 +65,7 @@
           </div>
 
           <div class="list-actions-content">
-            <ActionsBtns :id="`item-${item.id}`" :active-menu-id="activeMenuId" @set-active="setActiveMenu" />
+            <ActionsBtns :id="`item-${item.id}`" :active-menu-id="activeActionMenuId" @set-active="setActiveMenu" />
           </div>
         </li>
       </ul>
@@ -94,63 +91,63 @@ const emit = defineEmits<{
   (e: 'toggle', id: number): void
   (e: 'set-active', id: string): void
   (e: 'update-child-order', payload: { groupId: number; items: typeof props.game.items }): void
+  (e: 'child-drag-start'): void
+  (e: 'child-drag-end'): void
 }>()
 
-// Локальная копия элементов для сортировки
 const localItems = ref([...props.game.items])
 const draggedChildIndex = ref<number | null>(null)
-const draggedGroupId = ref<number | null>(null)
 
 watch(() => props.game.items, (newItems) => {
-  localItems.value = [...newItems] // обновляем локальные элементы, если они изменяются
+  localItems.value = [...newItems]
 })
 
-// --- drag and drop для вложенных элементов ---
+// Drag Start
 function onChildDragStart(index: number, event: DragEvent) {
+  event.stopPropagation()
   draggedChildIndex.value = index
-  draggedGroupId.value = props.game.id
   event.dataTransfer?.setData('text/plain', String(index))
+  event.dataTransfer!.effectAllowed = 'move'
+  emit('child-drag-start')
 }
 
+// Drag Over
 function onChildDragOver(event: DragEvent) {
   event.preventDefault()
+  event.dataTransfer!.dropEffect = 'move'
 }
 
+// Drop
 function onChildDrop(dropIndex: number, event: DragEvent) {
   event.preventDefault()
+  event.stopPropagation() // 🛑 блокируем всплытие
 
-  if (
-    draggedChildIndex.value === null ||
-    draggedGroupId.value !== props.game.id ||
-    draggedChildIndex.value === dropIndex
-  ) {
-    return
-  }
+  const from = draggedChildIndex.value
+  if (from === null || from === dropIndex) return
 
-  // Сортируем элементы
   const updated = [...localItems.value]
-  const [movedItem] = updated.splice(draggedChildIndex.value, 1)
-  updated.splice(dropIndex, 0, movedItem)
+  const [moved] = updated.splice(from, 1)
+  updated.splice(dropIndex, 0, moved)
 
-  localItems.value = updated // обновляем локальную копию
-
-  // Отправляем обновленные данные родителю
-  emit('update-child-order', { groupId: props.game.id, items: updated })
-
+  localItems.value = updated
   draggedChildIndex.value = null
-  draggedGroupId.value = null
+
+  emit('update-child-order', {
+    groupId: props.game.id,
+    items: updated,
+  })
+  emit('child-drag-end')
 }
 
-function onChildDragEnd() {
+function onChildDragEnd(event: DragEvent) {
+  event.stopPropagation() // 🛑 тоже на всякий случай
   draggedChildIndex.value = null
-  draggedGroupId.value = null
+  emit('child-drag-end')
 }
-
-// --- Взаимодействие с меню ---
+// Dropdown
 function toggleDropdown() {
   emit('toggle', props.game.id)
 }
-
 function setActiveMenu(id: string) {
   emit('set-active', id)
 }

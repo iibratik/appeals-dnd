@@ -4,21 +4,22 @@
       <li v-for="(item, index) in items" :key="item.id" :draggable="activeDropdownId !== item.id"
         @dragstart="onDragStart(index, $event)" @dragover="onDragOver($event)" @drop="onDrop(index, $event)"
         @dragend="onDragEnd">
-        <list-item @update-child-order="handleUpdateChildOrder" :active-action-menu-id="activeActionMenuId"
-          :game="mapGame(item)" :is-open="activeDropdownId === item.id" @toggle="toggleDropdown"
-          @set-active="setActiveMenu" />
+        <ListItem :game="mapGame(item)" :is-open="activeDropdownId === item.id"
+          :active-action-menu-id="activeActionMenuId" @toggle="toggleDropdown" @set-active="setActiveMenu"
+          @update-child-order="handleUpdateChildOrder"   @child-drag-start="isChildDragging = true"
+          @child-drag-end="isChildDragging = false" />
       </li>
       <li v-if="items.length === 0">No items available</li>
     </ul>
   </div>
 </template>
 
-<script lang="ts" setup>
+<script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import ListItem from '@/components/ListItem.vue'
 import { useAppealStore } from '@/stores/appeals'
 
-// Типы для данных
+// Типы
 interface Item {
   id: number
   title: string
@@ -26,69 +27,58 @@ interface Item {
   children: Item[]
 }
 
-// Типизация для игры (Game)
-interface Game {
-  id: number
-  title: string
-  order: number
-  children: Item[]
-}
-
-// Подключаем Pinia Store
 const appealStore = useAppealStore()
 
-// Данные для активного dropdown и меню
 const activeDropdownId = ref<number | null>(null)
 const activeActionMenuId = ref<string | null>(null)
-
-// Получаем текущие данные из стора с явной типизацией
 const items = computed(() => appealStore.items)
-
+const isChildDragging = ref(false)
 let dragStartIndex: number | null = null
 
-// Функция для преобразования данных
-function mapGame(item: Game) {
+// Маппер данных из стора к ListItem
+function mapGame(item: Item) {
   return {
     id: item.id,
-    name: item.title, // Используем title вместо name
+    name: item.title,
     order: item.order,
-    items: item.children.map((child) => ({
+    items: item.children.map(child => ({
       id: child.id,
-      name: child.title, // Используем title вместо name
+      name: child.title,
       order: child.order,
     })),
   }
 }
 
-// Функция для переключения dropdown
+// Обновление дочерних элементов в сторе
+function handleUpdateChildOrder({ groupId, items }: { groupId: number; items: { id: number; name: string; order: number }[] }) {
+  appealStore.updateChildItems(groupId, items)
+}
+
+// Открытие/закрытие dropdown
 function toggleDropdown(id: number) {
   activeDropdownId.value = activeDropdownId.value === id ? null : id
 }
 
-// Функция для установки активного меню
 function setActiveMenu(id: string) {
   activeActionMenuId.value = activeActionMenuId.value === id ? null : id
 }
 
-// Загружаем данные при монтировании компонента
+// Загрузка данных при монтировании
 onMounted(async () => {
-  // Загружаем данные для текущей страницы
   await appealStore.fetchAppeals(appealStore.page)
 })
 
-// Обработчик начала перетаскивания
+// Drag & Drop групп
 function onDragStart(index: number, event: DragEvent) {
-  // Если меню открыто — блокируем перетаскивание
-  if (activeDropdownId.value !== null) {
+  if (activeDropdownId.value !== null || isChildDragging.value) {
     event.preventDefault()
     return
   }
 
   dragStartIndex = index
   event.dataTransfer?.setData('text/plain', String(index))
-
-  const target = event.target as HTMLElement
-  target.classList.add('dragging')
+  const el = event.target as HTMLElement
+  el.classList.add('dragging')
 }
 
 function onDragOver(event: DragEvent) {
@@ -96,38 +86,29 @@ function onDragOver(event: DragEvent) {
 
   const container = document.querySelector('.scroll-container') as HTMLElement
   const rect = container.getBoundingClientRect()
-  const offset = 50 // Порог от краев
-  const scrollSpeed = 10 // Скорость прокрутки
+  const offset = 50
+  const speed = 10
 
-  if (event.clientY < rect.top + offset) {
-    container.scrollTop -= scrollSpeed
-  } else if (event.clientY > rect.bottom - offset) {
-    container.scrollTop += scrollSpeed
-  }
+  if (event.clientY < rect.top + offset) container.scrollTop -= speed
+  else if (event.clientY > rect.bottom - offset) container.scrollTop += speed
 }
 
-// Обработчик окончания перетаскивания
 function onDrop(index: number, event: DragEvent) {
   event.preventDefault()
-
   if (dragStartIndex === null || dragStartIndex === index) return
 
-  const draggedItem = items.value[dragStartIndex]
-  // Перемещаем элемент в новый индекс
-  const updatedItems = [...items.value]
-  updatedItems.splice(dragStartIndex, 1)
-  updatedItems.splice(index, 0, draggedItem)
+  const updated = [...items.value]
+  const [moved] = updated.splice(dragStartIndex, 1)
+  updated.splice(index, 0, moved)
 
-  // Обновляем данные
-  appealStore.updateItems(updatedItems)
+  appealStore.updateItems(updated)
   dragStartIndex = null
 }
+
 function onDragEnd(event: DragEvent) {
   dragStartIndex = null
-
-  const target = event.target as HTMLElement
-  target.classList.remove('dragging')
+  const el = event.target as HTMLElement
+  el.classList.remove('dragging')
 }
 </script>
 
-<style scoped></style>
