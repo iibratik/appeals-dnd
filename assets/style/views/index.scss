@@ -151,11 +151,49 @@
         transform: scaleX(-1);
     }
 }
+
 .appeal-list {
     background-color: var(--surface-color);
     padding: 19px 25px;
     border-radius: 12px;
     margin-top: 4px;
+    position: relative;
+    &s {
+        li.dragging {
+            background-color: #1e1b35; /* Темный фон */
+            border-radius: 12px;
+            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.4);
+            opacity: 0.95;
+            transition: all 0.2s ease;
+            transform: scale(1.01); /* легкое увеличение */
+            z-index: 10; /* поверх других */
+            position: relative;
+            & .appeal-list {
+                background-color: #201b3a; /* Тёмно-фиолетовый как на скрине */
+                &::before {
+                    content: "";
+                    position: absolute;
+                    left: 0;
+                    top: 0;
+                    border-radius: 12px;
+                    z-index: 99;
+                    width: 100%;
+                    height: 100%;
+                    border: 1px dashed #9080f9;
+                    background-color: var(--shadows-secondary-color);
+                }
+            }
+        }
+        li[draggable="true"] {
+            cursor: grab;
+            user-select: none;
+        }
+        li.disabled-drag {
+            cursor: not-allowed;
+            opacity: 0.6;
+            pointer-events: none; /* отключает события — чтобы не срабатывал drag */
+        }
+    }
     &__dropdown {
         padding-top: 14px;
         border-top: 1px solid #333b4d;
