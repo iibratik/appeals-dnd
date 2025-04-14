@@ -1,15 +1,15 @@
 <template>
   <div class="scroll-container">
     <ul class="appeal-lists">
-      <li v-for="(item, index) in items" :key="item.id" :draggable="activeDropdownId !== item.id"
+      <li v-for="(game, index) in games" :key="game.id" :draggable="activeDropdownId !== game.id"
         @dragstart="onDragStart(index, $event)" @dragover="onDragOver($event)" @drop="onDrop(index, $event)"
         @dragend="onDragEnd">
-        <ListItem :game="mapGame(item)" :is-open="activeDropdownId === item.id"
+        <ListItem :game="mapGame(game)" :is-open="activeDropdownId === game.id"
           :active-action-menu-id="activeActionMenuId" @toggle="toggleDropdown" @set-active="setActiveMenu"
           @update-child-order="handleUpdateChildOrder"   @child-drag-start="isChildDragging = true"
           @child-drag-end="isChildDragging = false" />
       </li>
-      <li v-if="items.length === 0">No items available</li>
+      <li v-if="games.length === 0">No items available</li>
     </ul>
   </div>
 </template>
@@ -31,7 +31,7 @@ const appealStore = useAppealStore()
 
 const activeDropdownId = ref<number | null>(null)
 const activeActionMenuId = ref<string | null>(null)
-const items = computed(() => appealStore.items)
+const games = computed(() => appealStore.items)
 const isChildDragging = ref(false)
 let dragStartIndex: number | null = null
 
@@ -97,7 +97,7 @@ function onDrop(index: number, event: DragEvent) {
   event.preventDefault()
   if (dragStartIndex === null || dragStartIndex === index) return
 
-  const updated = [...items.value]
+  const updated = [...games.value]
   const [moved] = updated.splice(dragStartIndex, 1)
   updated.splice(index, 0, moved)
 
