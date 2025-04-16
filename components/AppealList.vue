@@ -2,24 +2,14 @@
   <div class="scroll-container">
     <ul class="appeal-lists">
       <li
-        v-for="(game, index) in games"
-        :key="game.id"
-        :draggable="activeDropdownId !== game.id"
-        @dragstart="onDragStart(index, $event)"
-        @dragover="onDragOver($event)"
-        @drop="onDrop(index, $event)"
-        @dragend="onDragEnd"
-      >
+v-for="(game, index) in games" :key="game.id" :class="{ dragging: dragStartIndex === index }"
+        :draggable="!isChildDragging && activeDropdownId !== game.id" @dragstart="onDragStart(index, $event)"
+        @dragover="onDragOver($event)" @drop="onDrop(index, $event)" @dragend="onDragEnd">
         <ListItem
-          :game="mapGame(game)"
-          :is-open="activeDropdownId === game.id"
-          :active-action-menu-id="activeActionMenuId"
-          @toggle="toggleDropdown"
-          @set-active="setActiveMenu"
-          @update-child-order="handleUpdateChildOrder"
-          @child-drag-start="isChildDragging = true"
-          @child-drag-end="isChildDragging = false"
-        />
+:game="mapGame(game)" :is-open="activeDropdownId === game.id"
+          :active-action-menu-id="activeActionMenuId" @toggle="toggleDropdown" @set-active="setActiveMenu"
+          @update-child-order="handleUpdateChildOrder" @child-drag-start="isChildDragging = true"
+          @child-drag-end="isChildDragging = false" />
       </li>
       <li v-if="games.length === 0">No items available</li>
     </ul>
@@ -27,42 +17,51 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import ListItem from '@/components/ListItem.vue'
 import { useAppealStore } from '@/stores/appeals'
 import { useHistoryStore } from '@/stores/useHistoryStore'
 
-// Типы
 interface Item {
   id: number
-  title: string
+  name: string
   order: number
-  children: Item[]
+  items: {
+    id: number
+    name: string
+    order: number
+  }[]
 }
 
-// Stores
 const appealStore = useAppealStore()
 const historyStore = useHistoryStore()
 
-// Локальные состояния
 const activeDropdownId = ref<number | null>(null)
 const activeActionMenuId = ref<string | null>(null)
-const games = computed(() => appealStore.items)
 const isChildDragging = ref(false)
-let dragStartIndex: number | null = null
+const dragStartIndex = ref<number | null>(null)
 
-// Маппер данных для ListItem
+const games = computed(() => appealStore.items)
+
 function mapGame(item: Item) {
   return {
     id: item.id,
-    name: item.title,
+    name: item.name,
     order: item.order,
-    items: item.children.map(child => ({
+    items: item.items.map((child) => ({
       id: child.id,
-      name: child.title,
+      name: child.name,
       order: child.order,
     })),
   }
+}
+
+function toggleDropdown(id: number) {
+  activeDropdownId.value = activeDropdownId.value === id ? null : id
+}
+
+function setActiveMenu(id: string) {
+  activeActionMenuId.value = activeActionMenuId.value === id ? null : id
 }
 
 function handleUpdateChildOrder({
@@ -72,15 +71,14 @@ function handleUpdateChildOrder({
   groupId: number
   items: { id: number; name: string; order: number }[]
 }) {
-  // Клонируем текущие данные
   const updated = appealStore.items.map((group) => {
     if (group.id === groupId) {
       return {
         ...group,
-        children: items.map((item) => ({
+        children: items.map((item, idx) => ({
           id: item.id,
           title: item.name,
-          order: item.order,
+          order: idx + 1,
         })),
       }
     }
@@ -91,26 +89,15 @@ function handleUpdateChildOrder({
   historyStore.setItems(updated)
 }
 
-// Управление dropdown и меню
-function toggleDropdown(id: number) {
-  activeDropdownId.value = activeDropdownId.value === id ? null : id
-}
-
-function setActiveMenu(id: string) {
-  activeActionMenuId.value = activeActionMenuId.value === id ? null : id
-}
-
-// Drag & Drop логика
 function onDragStart(index: number, event: DragEvent) {
   if (activeDropdownId.value !== null || isChildDragging.value) {
     event.preventDefault()
     return
   }
 
-  dragStartIndex = index
+  dragStartIndex.value = index
   event.dataTransfer?.setData('text/plain', String(index))
-  const el = event.target as HTMLElement
-  el.classList.add('dragging')
+  event.dataTransfer!.effectAllowed = 'move'
 }
 
 function onDragOver(event: DragEvent) {
@@ -127,25 +114,27 @@ function onDragOver(event: DragEvent) {
 
 function onDrop(index: number, event: DragEvent) {
   event.preventDefault()
-  if (dragStartIndex === null || dragStartIndex === index) return
+
+  if (dragStartIndex.value === null || dragStartIndex.value === index) return
 
   const updated = [...games.value]
-  const [moved] = updated.splice(dragStartIndex, 1)
+  const [moved] = updated.splice(dragStartIndex.value, 1)
   updated.splice(index, 0, moved)
 
-  // Сохраняем изменения
-  appealStore.updateItems(updated)
-  historyStore.setItems(updated)
-  dragStartIndex = null
+  const normalized = updated.map((game, idx) => ({
+    ...game,
+    order: idx + 1,
+  }))
+
+  appealStore.updateItems(normalized)
+  historyStore.setItems(normalized)
+  dragStartIndex.value = null
 }
 
-function onDragEnd(event: DragEvent) {
-  dragStartIndex = null
-  const el = event.target as HTMLElement
-  el.classList.remove('dragging')
+function onDragEnd() {
+  dragStartIndex.value = null
 }
 
-// Загрузка данных и истории при монтировании
 onMounted(async () => {
   historyStore.loadFromStorage()
 
