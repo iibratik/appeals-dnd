@@ -4,9 +4,9 @@ export default defineEventHandler((event) => {
   const page = parseInt(query.page as string) || 1
   const perPage = parseInt(query.perPage as string) || 10
 
-  // Используем заранее определённый список игр
+
   const gameTitles = [
-    `DOTA2`, `CS2`, `Team Fortress`, `Half-Life`, `Portal`, `Left 4 Dead`,
+    `CS2`, `DOTA2`, `Team Fortress`, `Half-Life`, `Portal`, `Left 4 Dead`,
     `Cyberpunk 2077`, `Witcher 3`, `GTA V`, `Red Dead Redemption`, `Apex Legends`,
     `Valorant`, `League of Legends`, `PUBG`, `Overwatch`, `Call of Duty`, `Battlefield`,
     `Minecraft`, `Roblox`, `Fortnite`, `Starfield`, `Skyrim`, `Fallout`, `Elden Ring`,
@@ -25,7 +25,7 @@ export default defineEventHandler((event) => {
     `Spiritfarer`, `Kena: Bridge of Spirits`, `Stray`, `Hi-Fi Rush`
   ]
 
-  // Здесь фиксированное количество дочерних элементов для каждой игры
+
   const gameData = gameTitles.slice(0, 100).map((title, index) => ({
     id: index + 1,
     title: `${title}`,
@@ -34,7 +34,7 @@ export default defineEventHandler((event) => {
       { id: 1, title: `Item 1 of ${title}`, order: 1 },
       { id: 2, title: `Item 2 of ${title}`, order: 2 },
       { id: 3, title: `Item 3 of ${title}`, order: 3 },
-    ] // Фиксированное количество дочерних элементов
+    ]
   }))
 
   const start = (page - 1) * perPage

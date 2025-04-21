@@ -3,15 +3,15 @@ import { ref, computed } from 'vue'
 
 interface Item {
   id: number
-  name: string
+  title: string
   order: number
 }
 
 interface Game {
   id: number
-  name: string
+  title: string
   order: number
-  items: Item[]
+  children: Item[]
 }
 
 export const useAppealStore = defineStore('appeal', () => {
@@ -22,7 +22,7 @@ export const useAppealStore = defineStore('appeal', () => {
 
   const LOCAL_STORAGE_KEY = 'appeal-items'
 
-  // Загружаем из localStorage
+
   const loadFromStorage = () => {
     const stored = localStorage.getItem(LOCAL_STORAGE_KEY)
     if (stored) {
@@ -39,12 +39,11 @@ export const useAppealStore = defineStore('appeal', () => {
     return false
   }
 
-  // Сохраняем в localStorage
+
   const saveToStorage = () => {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(items.value))
   }
 
-  // Загрузка данных (сначала пробуем из localStorage)
   const fetchAppeals = async (_pageNum: number = page.value) => {
     const hasLocalData = loadFromStorage()
     if (hasLocalData) {
@@ -79,7 +78,7 @@ export const useAppealStore = defineStore('appeal', () => {
   const updateChildItems = (groupId: number, updatedItems: Item[]) => {
     const group = items.value.find(item => item.id === groupId)
     if (group) {
-      group.items = updatedItems
+      group.children = updatedItems
       saveToStorage()
     }
   }

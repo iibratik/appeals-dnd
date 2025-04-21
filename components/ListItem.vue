@@ -9,8 +9,8 @@
       <div class="list__item">
         <span class="list__upper-title">Name</span>
         <span class="list__title">
-          <img src="@/assets/icons/folder.svg" alt="folder-icon" />
-          {{ game.name }}
+          <img src="@/assets/icons/folder.svg" alt="folder-icon">
+          {{ game.title }}
         </span>
       </div>
 
@@ -22,18 +22,18 @@
       <div class="list__item">
         <span class="list__upper-title">Sub categories</span>
         <span class="list__title">
-          {{game.items.map(item => item.name).join(' / ')}}
+          {{game.children.map(item => item.title).join(' / ')}}
         </span>
       </div>
 
       <div class="list-actions-content">
         <div class="list__item-count">
-          <span>{{ game.items.length }}</span>
+          <span>{{ game.children.length }}</span>
         </div>
 
         <button class="btn drop-down-btn list-action" @click="toggleDropdown">
-          <img v-if="isOpen" src="@/assets/icons/up-icon.svg" alt="up icon" />
-          <img v-else src="@/assets/icons/down-icon.svg" alt="down icon" />
+          <img v-if="isOpen" src="@/assets/icons/up-icon.svg" alt="up icon">
+          <img v-else src="@/assets/icons/down-icon.svg" alt="down icon">
         </button>
 
         <ActionsBtns :id="`game-${game.id}`" :active-menu-id="activeActionMenuId" @set-active="setActiveMenu" />
@@ -43,7 +43,8 @@
     <!-- DROPDOWN -->
     <Transition name="fade-slide">
       <ul v-if="isOpen" class="appeal-lists__dropdown">
-        <li v-for="(item, index) in localItems" :key="item.id" class="appeal-list__dropdown" :draggable="true"
+        <li
+v-for="(item, index) in localItems" :key="item.id" class="appeal-list__dropdown" :draggable="true"
           @dragstart="onChildDragStart(index, $event)" @dragover="onChildDragOver" @drop="onChildDrop(index, $event)"
           @dragend="onChildDragEnd">
           <div class="list__item">
@@ -54,8 +55,8 @@
           <div class="list__item">
             <span class="list__upper-title">Name</span>
             <span class="list__title">
-              <img src="@/assets/icons/folder.svg" alt="folder-icon" />
-              {{ item.name }}
+              <img src="@/assets/icons/folder.svg" alt="folder-icon">
+              {{ item.title }}
             </span>
           </div>
 
@@ -79,9 +80,9 @@ import { ref, watch } from 'vue'
 const props = defineProps<{
   game: {
     id: number
-    name: string
+    title: string
     order: number
-    items: Array<{ id: number; name: string; order: number }>
+    children: Array<{ id: number; title: string; order: number }>
   }
   isOpen: boolean
   activeActionMenuId: string | null
@@ -90,19 +91,17 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'toggle', id: number): void
   (e: 'set-active', id: string): void
-  (e: 'update-child-order', payload: { groupId: number; items: typeof props.game.items }): void
-  (e: 'child-drag-start'): void
-  (e: 'child-drag-end'): void
+  (e: 'update-child-order', payload: { groupId: number; items: typeof props.game.children }): void
+  (e: 'child-drag-start' | 'child-drag-end'): void
 }>()
 
-const localItems = ref([...props.game.items])
+const localItems = ref([...props.game.children])
 const draggedChildIndex = ref<number | null>(null)
 
-watch(() => props.game.items, (newItems) => {
+watch(() => props.game.children, (newItems) => {
   localItems.value = [...newItems]
 })
 
-// Drag Start
 function onChildDragStart(index: number, event: DragEvent) {
   event.stopPropagation()
   draggedChildIndex.value = index
@@ -111,16 +110,15 @@ function onChildDragStart(index: number, event: DragEvent) {
   emit('child-drag-start')
 }
 
-// Drag Over
+
 function onChildDragOver(event: DragEvent) {
   event.preventDefault()
   event.dataTransfer!.dropEffect = 'move'
 }
 
-// Drop
 function onChildDrop(dropIndex: number, event: DragEvent) {
   event.preventDefault()
-  event.stopPropagation() // 🛑 блокируем всплытие
+  event.stopPropagation()
 
   const from = draggedChildIndex.value
   if (from === null || from === dropIndex) return
@@ -140,11 +138,11 @@ function onChildDrop(dropIndex: number, event: DragEvent) {
 }
 
 function onChildDragEnd(event: DragEvent) {
-  event.stopPropagation() // 🛑 тоже на всякий случай
+  event.stopPropagation()
   draggedChildIndex.value = null
   emit('child-drag-end')
 }
-// Dropdown
+
 function toggleDropdown() {
   emit('toggle', props.game.id)
 }

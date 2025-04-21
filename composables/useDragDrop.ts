@@ -7,7 +7,7 @@ export function useDragDrop() {
 
     function onDrop(targetList: unknown[], id: number) {
       if (dragged.value === null || dragged.value === id) return
-      // Реализация перемещения: извлечь элемент и вставить в нужное место
+
     }
 
     return { dragged, onDragStart, onDrop }

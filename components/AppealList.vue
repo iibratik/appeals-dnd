@@ -2,24 +2,13 @@
   <div class="scroll-container">
     <ul class="appeal-lists">
       <li
-        v-for="(game, index) in games"
-        :key="game.id"
-        :draggable="activeDropdownId !== game.id"
-        @dragstart="onDragStart(index, $event)"
-        @dragover="onDragOver($event)"
-        @drop="onDrop(index, $event)"
-        @dragend="onDragEnd"
-      >
+v-for="(game, index) in games" :key="game.id" :draggable="activeDropdownId !== game.id"
+        @dragstart="onDragStart(index, $event)" @dragover="onDragOver($event)" @drop="onDrop(index, $event)"
+        @dragend="onDragEnd">
         <ListItem
-          :game="mapGame(game)"
-          :is-open="activeDropdownId === game.id"
-          :active-action-menu-id="activeActionMenuId"
-          @toggle="toggleDropdown"
-          @set-active="setActiveMenu"
-          @update-child-order="handleUpdateChildOrder"
-          @child-drag-start="isChildDragging = true"
-          @child-drag-end="isChildDragging = false"
-        />
+:game="game" :is-open="activeDropdownId === game.id" :active-action-menu-id="activeActionMenuId"
+          @toggle="toggleDropdown" @set-active="setActiveMenu" @update-child-order="handleUpdateChildOrder"
+          @child-drag-start="isChildDragging = true" @child-drag-end="isChildDragging = false" />
       </li>
       <li v-if="games.length === 0">No items available</li>
     </ul>
@@ -32,54 +21,36 @@ import ListItem from '@/components/ListItem.vue'
 import { useAppealStore } from '@/stores/appeals'
 import { useHistoryStore } from '@/stores/useHistoryStore'
 
-// Типы
-interface Item {
-  id: number
-  title: string
-  order: number
-  children: Item[]
-}
+
 
 // Stores
 const appealStore = useAppealStore()
 const historyStore = useHistoryStore()
 
-// Локальные состояния
+// local States
 const activeDropdownId = ref<number | null>(null)
 const activeActionMenuId = ref<string | null>(null)
 const games = computed(() => appealStore.items)
 const isChildDragging = ref(false)
 let dragStartIndex: number | null = null
 
-// Маппер данных для ListItem
-function mapGame(item: Item) {
-  return {
-    id: item.id,
-    name: item.title,
-    order: item.order,
-    items: item.children.map(child => ({
-      id: child.id,
-      name: child.title,
-      order: child.order,
-    })),
-  }
-}
+
 
 function handleUpdateChildOrder({
   groupId,
   items,
 }: {
   groupId: number
-  items: { id: number; name: string; order: number }[]
+  items: { id: number; title: string; order: number }[]
 }) {
-  // Клонируем текущие данные
+  // Clone current data
   const updated = appealStore.items.map((group) => {
     if (group.id === groupId) {
       return {
         ...group,
         children: items.map((item) => ({
           id: item.id,
-          title: item.name,
+          title: item.title,
           order: item.order,
         })),
       }
@@ -91,7 +62,7 @@ function handleUpdateChildOrder({
   historyStore.setItems(updated)
 }
 
-// Управление dropdown и меню
+// drag and drop controll
 function toggleDropdown(id: number) {
   activeDropdownId.value = activeDropdownId.value === id ? null : id
 }
@@ -100,7 +71,7 @@ function setActiveMenu(id: string) {
   activeActionMenuId.value = activeActionMenuId.value === id ? null : id
 }
 
-// Drag & Drop логика
+// Drag & Drop logic
 function onDragStart(index: number, event: DragEvent) {
   if (activeDropdownId.value !== null || isChildDragging.value) {
     event.preventDefault()
@@ -133,7 +104,7 @@ function onDrop(index: number, event: DragEvent) {
   const [moved] = updated.splice(dragStartIndex, 1)
   updated.splice(index, 0, moved)
 
-  // Сохраняем изменения
+  // Save states
   appealStore.updateItems(updated)
   historyStore.setItems(updated)
   dragStartIndex = null
@@ -145,7 +116,7 @@ function onDragEnd(event: DragEvent) {
   el.classList.remove('dragging')
 }
 
-// Загрузка данных и истории при монтировании
+// Load data
 onMounted(async () => {
   historyStore.loadFromStorage()
 

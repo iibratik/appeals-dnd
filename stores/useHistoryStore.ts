@@ -3,9 +3,9 @@ import { ref } from 'vue'
 
 interface Game {
   id: number
-  name: string
+  title: string
   order: number
-  items: { id: number; name: string; order: number }[]
+  children: { id: number; title: string; order: number }[]
 }
 
 export const useHistoryStore = defineStore('history', () => {
