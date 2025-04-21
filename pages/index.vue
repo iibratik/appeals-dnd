@@ -7,10 +7,10 @@
           <button class="btn primary-btn">Found: {{ appealStore.totalItems }}</button>
         </div>
         <control-btns
+          :is-next-step-active="canRedo"
+          :is-prev-step-active="canUndo"
           @next-step="redoStep"
           @prev-step="undoStep"
-          :isNextStepActive="canRedo"
-          :isPrevStepActive="canUndo"
         />
       </div>
 
@@ -21,9 +21,10 @@
       <div class="list-footer">
         <span class="footer-title">Showing {{ appealStore.showingRange }}</span>
         <div class="footer-pagination">
-          <button class="pagination-btn prev-pagination" @click="changePage(appealStore.page - 1)"
-            :disabled="appealStore.page <= 1">
-            <img src="@/assets/icons/left-btn-icon.svg" alt="prev icon" />
+          <button
+class="pagination-btn prev-pagination" :disabled="appealStore.page <= 1"
+            @click="changePage(appealStore.page - 1)">
+            <img src="@/assets/icons/left-btn-icon.svg" alt="prev icon" >
           </button>
           <div class="footer-pagination-items">
             <div
@@ -36,9 +37,10 @@
               {{ item === '...' ? '...' : item }}
             </div>
           </div>
-          <button class="pagination-btn next-pagination" @click="changePage(appealStore.page + 1)"
-            :disabled="appealStore.page >= appealStore.totalPages">
-            <img src="@/assets/icons/left-btn-icon.svg" alt="next icon" />
+          <button
+class="pagination-btn next-pagination" :disabled="appealStore.page >= appealStore.totalPages"
+            @click="changePage(appealStore.page + 1)">
+            <img src="@/assets/icons/left-btn-icon.svg" alt="next icon" >
           </button>
         </div>
       </div>
@@ -58,7 +60,6 @@ const historyStore = useHistoryStore()
 onMounted(async () => {
   await appealStore.fetchAppeals()
 
-
   historyStore.loadFromStorage()
 
 
@@ -66,7 +67,6 @@ onMounted(async () => {
     appealStore.updateItems(historyStore.currentItems)
   }
 })
-
 
 function undoStep() {
   historyStore.undo()

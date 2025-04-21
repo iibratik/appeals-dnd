@@ -21,11 +21,11 @@
       <Transition name="fade-slide">
         <div v-if="isActive" class="list-actions__menu">
           <span class="list-menu__item">
-            <img src="@/assets/icons/pencil.svg" alt="edit icon" />
+            <img src="@/assets/icons/pencil.svg" alt="edit icon" >
             Edit
           </span>
           <span class="list-menu__item">
-            <img src="@/assets/icons/trash.svg" alt="trash icon" />
+            <img src="@/assets/icons/trash.svg" alt="trash icon" >
             Remove
           </span>
         </div>

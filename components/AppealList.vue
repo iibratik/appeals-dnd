@@ -16,23 +16,23 @@ v-for="(game, index) in games" :key="game.id" :draggable="activeDropdownId !== g
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import ListItem from '@/components/ListItem.vue'
 import { useAppealStore } from '@/stores/appeals'
 import { useHistoryStore } from '@/stores/useHistoryStore'
 
 
 
-// Stores
 const appealStore = useAppealStore()
 const historyStore = useHistoryStore()
 
 // local States
 const activeDropdownId = ref<number | null>(null)
 const activeActionMenuId = ref<string | null>(null)
-const games = computed(() => appealStore.items)
 const isChildDragging = ref(false)
-let dragStartIndex: number | null = null
+const dragStartIndex = ref<number | null>(null)
+
+const games = computed(() => appealStore.items)
 
 
 
@@ -78,10 +78,9 @@ function onDragStart(index: number, event: DragEvent) {
     return
   }
 
-  dragStartIndex = index
+  dragStartIndex.value = index
   event.dataTransfer?.setData('text/plain', String(index))
-  const el = event.target as HTMLElement
-  el.classList.add('dragging')
+  event.dataTransfer!.effectAllowed = 'move'
 }
 
 function onDragOver(event: DragEvent) {
@@ -98,22 +97,21 @@ function onDragOver(event: DragEvent) {
 
 function onDrop(index: number, event: DragEvent) {
   event.preventDefault()
-  if (dragStartIndex === null || dragStartIndex === index) return
+
+  if (dragStartIndex.value === null || dragStartIndex.value === index) return
 
   const updated = [...games.value]
-  const [moved] = updated.splice(dragStartIndex, 1)
+  const [moved] = updated.splice(dragStartIndex.value, 1)
   updated.splice(index, 0, moved)
 
   // Save states
   appealStore.updateItems(updated)
   historyStore.setItems(updated)
-  dragStartIndex = null
+  dragStartIndex.value = null
 }
 
-function onDragEnd(event: DragEvent) {
-  dragStartIndex = null
-  const el = event.target as HTMLElement
-  el.classList.remove('dragging')
+function onDragEnd() {
+  dragStartIndex.value = null
 }
 
 // Load data
